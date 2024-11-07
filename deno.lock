@@ -2,11 +2,15 @@
   "version": "3",
   "packages": {
     "specifiers": {
-      "jsr:@hono/hono@^4.6.9": "jsr:@hono/hono@4.6.9"
+      "jsr:@hono/hono@^4.6.9": "jsr:@hono/hono@4.6.9",
+      "jsr:@std/dotenv": "jsr:@std/dotenv@0.225.0"
     },
     "jsr": {
       "@hono/hono@4.6.9": {
         "integrity": "4d4975f5c023d4416d26e6dd4a498c56e59958561733f56f55a9be57f023603b"
+      },
+      "@std/dotenv@0.225.0": {
+        "integrity": "44db32932c67df82790a3e6847d7007befb6cc22d71f2f3ee7b7d00e1f0d6c94"
       }
     }
   },
