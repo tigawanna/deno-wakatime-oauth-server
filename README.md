@@ -120,3 +120,27 @@ how to use access token
       "Authorization":"Bearer "+temp_access_token
   }})
 ```
+
+constribute to pocketbase checklist
+
+To add your own OAuth provider to the `pocketbase/pocketbase` repository, you'll need to modify several files. Here are the key files and the changes you need to make:
+
+1. **`forms/record_oauth2_login.go`**: Add your new provider to the validation and submission logic.
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/forms/record_oauth2_login.go)
+
+2. **`ui/src/providers.js`**: Add your provider's configuration, including `key`, `title`, `logo`, and optional configuration components.
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/ui/src/providers.js)
+
+3. **`tools/auth/base_provider.go`**: Implement methods for the new provider (e.g., `SetRedirectUrl`, `AuthUrl`, `TokenUrl`, `UserApiUrl`, `FetchToken`, `FetchRawUserData`).
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/tools/auth/base_provider.go)
+
+4. **`apis/record_auth.go`**: Add your provider to the OAuth2 authentication flow.
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/apis/record_auth.go)
+
+5. **`models/settings/settings.go`**: Add your provider's configuration to the settings model.
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/models/settings/settings.go)
+
+6. **`tools/auth/auth.go`**: Register your new provider in the provider factory.
+   - Example changes: [link](https://github.com/pocketbase/pocketbase/blob/26ef0c697c5d95f4a9da13090797673ac36e5bc0/tools/auth/auth.go)
+
+Refer to the PR changes for a detailed view of how new providers are added: [PR #3948 Files](https://github.com/pocketbase/pocketbase/pull/3948/files).

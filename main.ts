@@ -1,5 +1,6 @@
 import "jsr:@std/dotenv/load";
 import { Hono } from "hono";
+import { HomeRoute } from "./routes/home/index.tsx";
 
 const app = new Hono({});
 
@@ -18,12 +19,12 @@ if (!client_secret) {
   throw new Error("CLIENT_SECRET is not set");
 }
 
-app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});
+// home route
+app.route("/", HomeRoute);
+// get oauth token
+
 app.post("/oauth/token", async (c) => {
-  console.log(" ==== c.req.url  ==== ", c.req.url);
-  //   https://wakatime.com/oauth/token - Make a server-side POST request here to get the secret access token. Required data is client_id, client_secret, redirect_uri must be the same url used in authorize step, grant_type of authorization_code, and the code received from the authorize step.
+//   https://wakatime.com/oauth/token - Make a server-side POST request here to get the secret access token. Required data is client_id, client_secret, redirect_uri must be the same url used in authorize step, grant_type of authorization_code, and the code received from the authorize step.
   const wakatime_oauth_endoint = "https://wakatime.com/oauth/token ";
   const redirect_uri = `${my_app}/redirect`;
 
@@ -43,7 +44,6 @@ app.post("/oauth/token", async (c) => {
       }),
     }).then((r) => {
       if (!r.ok) {
-        console.log(" ==== resopnse  ==== ", r);
         return c.json({
           status: r.status,
           statusText: r.statusText,
@@ -56,12 +56,18 @@ app.post("/oauth/token", async (c) => {
       status: 200,
       resopnse,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if(error instanceof Error) {
     console.log(" ==== error . message  ==== ", error.message);
     return c.json({
       status: 500,
       error: error.message,
     });
+  }
+  return c.json({
+    status: 500,
+    error: "Unknown error",
+  });
   }
 
   // return c.redirect(wakatimeAuthUrl.toString())
@@ -86,25 +92,41 @@ app.post("/oauth/authorize", (c) => {
   wakatimeAuthUrl.searchParams.append("scope", scope);
   wakatimeAuthUrl.searchParams.append("state", state);
   wakatimeAuthUrl.searchParams.append("force_approve", force_approve);
-  console.log("wakatime url  == ", wakatimeAuthUrl.toString());
   return c.redirect(wakatimeAuthUrl.toString());
 });
-// app.post('/redirect', async(c) => {
-//   const responseUrl = c.req.url
-//   const responseBody =    await c.req.parseBody()
-//   console.log("responseUrl == ", responseUrl)
-//   console.log("responseBody == ", responseBody)
 
-//   return c.json({
-//     responseUrl,
-//     responseBody
-//   })
-// })
 app.get("/redirect", async (c) => {
+  
   const responseUrl = c.req.url;
   const responseBody = await c.req.parseBody();
-  console.log("responseUrl == ", responseUrl);
-  console.log("responseBody == ", responseBody);
+
+  const code = c.req.param("code");
+  const access_token = c.req.param("access_token");
+  const expires_at = c.req.param("expires_at");
+  const expires_in = c.req.param("expires_in");
+  const refresh_token = c.req.param("refresh_token");
+  const token_type = c.req.param("token_type");
+  const scope = c.req.param("scope");
+  const uid = c.req.param("uid");
+  const state = c.req.param("state");
+
+console.log(" ==== request context  ==== ");
+console.dir(c.req, { depth: 30 });
+
+console.log(" ==== request params  ==== ");
+console.log({
+    code,
+    access_token,
+    expires_at,
+    expires_in,
+    refresh_token,
+    token_type,
+    scope,
+    uid,
+    state,
+  })
+
+
 
   return c.json({
     responseUrl,
@@ -113,31 +135,33 @@ app.get("/redirect", async (c) => {
 });
 
 
-app.get("/summaries", async(c) => {
-  try{
-  const summariesEndpoint = new URL("https://wakatime.com/api/v1/users/current/summaries"); 
-   if(temp_access_token){
-     // summariesEndpoint.searchParams.append("access_token", temp_access_token);
-   }
-   summariesEndpoint.searchParams.append("start", "11/01/2024");
-   summariesEndpoint.searchParams.append("end", "11/02/2024");
-  const response =  await fetch(summariesEndpoint.toString(),{
-    headers: {
-      "Authorization":"Bearer "+temp_access_token
-  }})
-  .then((r) => {
-  if(!r.ok){
+app.get("/summaries", async (c) => {
+  try {
+    const summariesEndpoint = new URL("https://wakatime.com/api/v1/users/current/summaries");
+    if (temp_access_token) {
+      // summariesEndpoint.searchParams.append("access_token", temp_access_token);
+    }
+    summariesEndpoint.searchParams.append("start", "11/01/2024");
+    summariesEndpoint.searchParams.append("end", "11/02/2024");
+    const response = await fetch(summariesEndpoint.toString(), {
+      headers: {
+        "Authorization": "Bearer " + temp_access_token
+      }
+    })
+      .then((r) => {
+        if (!r.ok) {
+          return c.json({
+            status: r.status,
+            statusText: r.statusText
+          })
+        }
+        return r.json()
+      })
     return c.json({
-      status: r.status,
-      statusText: r.statusText
+      status: 200,
+      response
     })
   }
-  return  r.json()
-  })
-  return c.json({
-    status: 200,
-    response
-  })}
   catch (error: any) {
     console.log(" ==== error . message  ==== ", error.message);
     return c.json({
@@ -146,27 +170,38 @@ app.get("/summaries", async(c) => {
     });
   }
 });
+
+app.get("/red", async (c) => {
+const params = c.req.raw.url
+return c.json({
+  status: 200,
+  params,
+  request:c.req
+});
+})
+
 // access_token = waka_tok_jzfbdhOWu8YVkLmGN8Jn9tButM6Gn5NZEjuHAnNqHDNdPJRY6JyquKxIX4dj03FVrWOEomqyZmqCq22P & start=11 /01 / 2024 & end=11 /02 / 2024
-app.get("/current", async(c) => {
-try{
-  const response =  await fetch("https://wakatime.com/api/v1/users/current",{
-    headers: {
-      "Authorization":"Bearer waka_tok_jzfbdhOWu8YVkLmGN8Jn9tButM6Gn5NZEjuHAnNqHDNdPJRY6JyquKxIX4dj03FVrWOEomqyZmqCq22P"
-    }
-  })
-  .then((r) => {
-  if(!r.ok){
+app.get("/current", async (c) => {
+  try {
+    const response = await fetch("https://wakatime.com/api/v1/users/current", {
+      headers: {
+        "Authorization": "Bearer waka_tok_jzfbdhOWu8YVkLmGN8Jn9tButM6Gn5NZEjuHAnNqHDNdPJRY6JyquKxIX4dj03FVrWOEomqyZmqCq22P"
+      }
+    })
+      .then((r) => {
+        if (!r.ok) {
+          return c.json({
+            status: r.status,
+            statusText: r.statusText
+          })
+        }
+        return r.json()
+      })
     return c.json({
-      status: r.status,
-      statusText: r.statusText
+      status: 200,
+      response
     })
   }
-  return  r.json()
-  })
-  return c.json({
-    status: 200,
-    response
-  })}
   catch (error: any) {
     console.log(" ==== error . message  ==== ", error.message);
     return c.json({
